@@ -205,7 +205,7 @@ public class RiverUnmarshaller extends AbstractUnmarshaller {
         }
     }
 
-    protected Object doReadObject(final boolean unshared) throws ClassNotFoundException, IOException {
+    protected Object doReadObjectInternal(final boolean unshared) throws ClassNotFoundException, IOException {
         final Object obj = doReadObject(readUnsignedByte(), unshared, false);
         if (depth == 0) {
             final SortedSet<Validator> validators = this.validators;
@@ -219,6 +219,25 @@ public class RiverUnmarshaller extends AbstractUnmarshaller {
         }
         return obj;
     }
+
+    protected Object doReadObject(final boolean unshared) throws ClassNotFoundException, IOException {
+        try {
+            return doReadObjectInternal(unshared);
+        } catch (ClassNotFoundException e) {
+            //this one is handled by widlfly (WFLY-6665), but cause infinite recursion in 9.0.2
+            throw e;
+        } catch (InvalidClassException e) {
+            //this one is handled by widlfly (WFLY-6665), but cause infinite recursion in 9.0.2
+            throw e;
+        } catch (InvalidObjectException e) {
+            //this one is handled by widlfly (WFLY-6665), but cause infinite recursion in 9.0.2
+            throw e;
+        } catch (Exception e) {
+            //WFLY-6665 workaround, but WARNING: this cause infinite recursion in 9.0.2!
+            throw new InvalidObjectException("failed to unmarshall: " + e);
+        }
+    }
+
 
     Object doReadObject(final boolean unshared, final boolean discardMissing) throws IOException, ClassNotFoundException {
         return doReadObject(readUnsignedByte(), unshared, discardMissing);
